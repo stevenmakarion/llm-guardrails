@@ -1,5 +1,7 @@
 # llm-guardrails
 
+![](images/preview.png)
+
 Make an LLM call safe to put on a cron at 3am.
 
 An LLM is not an API. An API fails **loudly** — 500, timeout, exception. An LLM fails
