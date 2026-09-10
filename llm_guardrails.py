@@ -174,7 +174,18 @@ def validate(text: str, schema: Optional[Schema]) -> tuple[bool, str, Any]:
         if data is None:
             return False, "no parseable JSON in the response", None
         if not isinstance(data, dict):
-            return (True, "ok", data) if data else (False, "empty JSON", None)
+            # FIXED 2026-09-09. This used to be:
+            #     return (True, "ok", data) if data else (False, "empty JSON", None)
+            # which passed ANY truthy non-object. We only reach this branch when the
+            # caller declared `required` keys or `types`, and neither can be satisfied
+            # by a list or a scalar. So a model answering `[1]` to a schema requiring a
+            # `summary` string was validated as OK, and the required-key loop below was
+            # never reached. A validator that green-lights the shape it exists to reject
+            # is worse than no validator, because callers stop checking.
+            return (False,
+                    f"expected a JSON object with keys {sorted(set(schema.required) | set(schema.types))}, "
+                    f"got {type(data).__name__}",
+                    None)
         for k in schema.required:
             if k not in data:
                 return False, f"missing required key {k!r}", None
